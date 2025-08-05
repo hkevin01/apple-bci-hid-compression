@@ -1,0 +1,77 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "swift: Build Debug HID Interface",
+            "type": "shell",
+            "command": "swift build",
+            "args": [
+                "--product",
+                "HIDInterface",
+                "--configuration",
+                "debug"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": {
+                "owner": "swift",
+                "fileLocation": ["relative", "${workspaceFolder}"],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            }
+        },
+        {
+            "label": "python: Run Tests",
+            "type": "shell",
+            "command": "pytest",
+            "args": [
+                "-v",
+                "--cov=src",
+                "--cov-report=term-missing"
+            ],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "python: Type Check",
+            "type": "shell",
+            "command": "mypy",
+            "args": [
+                "src",
+                "tests"
+            ],
+            "problemMatcher": {
+                "owner": "python",
+                "fileLocation": ["relative", "${workspaceFolder}"],
+                "pattern": {
+                    "regexp": "^(.+):(\\d+):\\s+(error|warning):\\s+(.+)$",
+                    "file": 1,
+                    "line": 2,
+                    "severity": 3,
+                    "message": 4
+                }
+            }
+        },
+        {
+            "label": "python: Format Code",
+            "type": "shell",
+            "command": "black",
+            "args": [
+                "src",
+                "tests"
+            ],
+            "problemMatcher": []
+        }
+    ]
+}

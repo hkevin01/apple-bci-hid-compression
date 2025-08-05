@@ -1,0 +1,24 @@
+{
+  "checkpoints": {
+    "enabled": true,
+    "interval": 15
+  },
+  "suggestions": {
+    "autoTrigger": true,
+    "inlineCompletion": true
+  },
+  "contextWindow": {
+    "size": 50,
+    "includeTests": true
+  },
+  "languagePreferences": {
+    "swift": {
+      "style": "apple",
+      "documentation": "docC"
+    },
+    "python": {
+      "style": "pep8",
+      "documentation": "google"
+    }
+  }
+}

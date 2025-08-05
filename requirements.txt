@@ -1,0 +1,31 @@
+# Core dependencies
+numpy>=1.24.0
+scipy>=1.10.0
+torch>=2.0.0
+pandas>=2.0.0
+
+# Neural processing
+mne>=1.0.0
+pyedflib>=0.1.0
+neurokit2>=0.2.0
+
+# Machine Learning
+scikit-learn>=1.2.0
+tensorflow>=2.12.0
+keras>=2.12.0
+
+# Data handling & visualization
+h5py>=3.8.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Testing
+pytest>=7.3.0
+pytest-cov>=4.0.0
+hypothesis>=6.75.3
+
+# Development
+black>=23.3.0
+pylint>=2.17.0
+mypy>=1.3.0
+jupyter>=1.0.0

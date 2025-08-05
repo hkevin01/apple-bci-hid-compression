@@ -1,0 +1,49 @@
+name: Security Scan
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Run daily
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install safety bandit
+
+      - name: Run safety check
+        run: safety check -r requirements.txt
+
+      - name: Run bandit
+        run: bandit -r src/ -f json -o security-report.json
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-report
+          path: security-report.json
+
+      - name: OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: "apple-bci-hid-compression"
+          path: "."
+          format: "HTML"
+
+      - name: Upload OWASP report
+        uses: actions/upload-artifact@v3
+        with:
+          name: dependency-check-report
+          path: reports
