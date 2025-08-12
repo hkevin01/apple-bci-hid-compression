@@ -3,11 +3,12 @@ from __future__ import annotations
 
 import asyncio
 from typing import AsyncIterator, Optional
+
 import numpy as np
 
-from ..compression import WaveletCompressor
+from ...hid_interface import HIDEvent, select_backend
 from ...neural_translation.intent_translator import AsyncIntentSession
-from ...hid_interface import select_backend, HIDEvent
+from ..compression import WaveletCompressor
 
 
 async def async_process_stream(frames: AsyncIterator[np.ndarray], compressor: Optional[WaveletCompressor] = None) -> AsyncIterator[HIDEvent]:
@@ -43,4 +44,5 @@ class ListFrameStream:
             raise StopAsyncIteration
         if self.delay:
             await asyncio.sleep(self.delay)
+        return nxt
         return nxt
