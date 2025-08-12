@@ -5,21 +5,27 @@ import json
 import logging
 import os
 import sys
-import time
+import random
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-# Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+try:  # Optional numpy for seeding; ignore if unavailable
+    import numpy as _np  # type: ignore
+except Exception:  # pragma: no cover
+    _np = None  # type: ignore
 
-from compatibility.compatibility_testing import CompatibilityTestingSuite
-from integration.real_world_testing import RealWorldTestingSuite
+# Add src (project source) to path for core module imports
+_SRC_PATH = os.path.join(os.path.dirname(__file__), '..', 'src')
+if _SRC_PATH not in sys.path:
+    sys.path.insert(0, _SRC_PATH)
 
-# Import all testing suites
-from performance.automated_benchmarks import AutomatedBenchmarkingSuite
-from security.security_testing import SecurityTestingSuite
-from ux.user_experience_testing import UXTestingSuite
+# Relative imports (requires tests package with __init__.py)
+from .compatibility.compatibility_testing import CompatibilityTestingSuite
+from .integration.real_world_testing import RealWorldTestingSuite
+from .performance.automated_benchmarks import AutomatedBenchmarkingSuite
+from .security.security_testing import SecurityTestingSuite
+from .ux.user_experience_testing import UXTestingSuite
 
 
 @dataclass
@@ -68,6 +74,22 @@ class Phase4TestRunner:
         )
         self.logger = logging.getLogger(__name__)
 
+        # Optional deterministic seeding
+        seed_env = os.getenv("PHASE4_TEST_SEED")
+        if seed_env:
+            try:
+                seed_val = int(seed_env)
+                random.seed(seed_val)
+                if _np is not None:
+                    _np.random.seed(seed_val)
+                self.logger.info(
+                    "Deterministic seeding enabled seed=%d", seed_val
+                )
+            except ValueError:
+                self.logger.warning(
+                    "PHASE4_TEST_SEED provided but not an int; ignoring"
+                )
+
         print("🚀 Phase 4 Comprehensive Testing Suite")
         print("=" * 60)
         print("   Performance Testing")
@@ -81,26 +103,24 @@ class Phase4TestRunner:
         """Run all Phase 4 testing suites."""
         self.start_time = datetime.now()
 
-        print(f"\n🚀 Starting Phase 4 Comprehensive Testing")
-        print(f"   Start Time: {self.start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        print("\n🚀 Starting Phase 4 Comprehensive Testing")
+        print(
+            f"   Start Time: {self.start_time.strftime('%Y-%m-%d %H:%M:%S')}"
+        )
         print("=" * 60)
 
-        # Define test suites to run
         test_suites = [
             ("Performance Testing", self._run_performance_tests),
             ("Real-World Integration Testing", self._run_integration_tests),
             ("Security Testing", self._run_security_tests),
             ("User Experience Testing", self._run_ux_tests),
-            ("Compatibility Testing", self._run_compatibility_tests)
+            ("Compatibility Testing", self._run_compatibility_tests),
         ]
-
-        suite_results = []
 
         for suite_name, test_function in test_suites:
             try:
                 print(f"\n🧪 Running {suite_name}")
                 print("-" * 40)
-
                 suite_start = datetime.now()
                 result = await test_function()
                 suite_end = datetime.now()
@@ -109,55 +129,43 @@ class Phase4TestRunner:
                     suite_name=suite_name,
                     start_time=suite_start,
                     end_time=suite_end,
-                    success=result['success'],
-                    score=result['score'],
-                    details=result['details'],
-                    recommendations=result['recommendations'],
-                    critical_issues=result['critical_issues']
+                    success=result["success"],
+                    score=result["score"],
+                    details=result["details"],
+                    recommendations=result["recommendations"],
+                    critical_issues=result["critical_issues"],
                 )
-
                 self.results.append(suite_result)
 
-                # Print suite summary
                 duration = (suite_end - suite_start).total_seconds() / 60
-                status = "✅ PASSED" if result['success'] else "❌ FAILED"
+                status = "✅ PASSED" if result["success"] else "❌ FAILED"
                 print(f"\n{status} - {suite_name}")
                 print(f"   Duration: {duration:.1f} minutes")
                 print(f"   Score: {result['score']*100:.1f}%")
-
-                if result['critical_issues']:
-                    print(f"   🚨 Critical Issues: {len(result['critical_issues'])}")
-                    for issue in result['critical_issues'][:3]:  # Show first 3
+                if result["critical_issues"]:
+                    issue_count = len(result["critical_issues"])
+                    print(f"   🚨 Critical Issues: {issue_count}")
+                    for issue in result["critical_issues"][:3]:
                         print(f"     • {issue}")
-
-            except Exception as e:
+            except Exception as e:  # pragma: no cover - protective diagnostic
                 print(f"\n💥 {suite_name} FAILED: {e}")
-                self.logger.error(f"{suite_name} failed: {e}")
-
-                # Create failure result
+                self.logger.error("%s failed: %s", suite_name, e)
                 suite_result = Phase4TestResult(
                     suite_name=suite_name,
                     start_time=datetime.now(),
                     end_time=datetime.now(),
                     success=False,
                     score=0.0,
-                    details={'error': str(e)},
+                    details={"error": str(e)},
                     recommendations=[f"Fix {suite_name} execution issues"],
-                    critical_issues=[f"{suite_name} failed to execute: {e}"]
+                    critical_issues=[f"{suite_name} failed to execute: {e}"],
                 )
                 self.results.append(suite_result)
 
         self.end_time = datetime.now()
-
-        # Generate comprehensive summary
         summary = self._generate_phase4_summary()
-
-        # Print final summary
-        await self._print_phase4_summary(summary)
-
-        # Save results
-        await self._save_phase4_results(summary)
-
+        self._print_phase4_summary(summary)
+        self._save_phase4_results(summary)
         return summary
 
     async def _run_performance_tests(self) -> Dict[str, Any]:
@@ -168,16 +176,25 @@ class Phase4TestRunner:
 
             # Evaluate results
             metrics = report.get('performance_metrics', {})
-            avg_latency = metrics.get('avg_processing_latency_ms', float('inf'))
+            avg_latency = metrics.get(
+                'avg_processing_latency_ms', float('inf')
+            )
             memory_efficiency = metrics.get('memory_efficiency_score', 0.0)
             throughput = metrics.get('avg_throughput_signals_per_sec', 0)
 
             # Calculate score based on performance metrics
-            latency_score = max(0, 1.0 - (avg_latency - 50) / 100) if avg_latency < 150 else 0.0
+            latency_score = (
+                max(0, 1.0 - (avg_latency - 50) / 100)
+                if avg_latency < 150
+                else 0.0
+            )
             memory_score = memory_efficiency
-            throughput_score = min(1.0, throughput / 1000)  # Target 1000 signals/sec
+            # Target 1000 signals/sec
+            throughput_score = min(1.0, throughput / 1000)
 
-            overall_score = (latency_score + memory_score + throughput_score) / 3
+            overall_score = (
+                latency_score + memory_score + throughput_score
+            ) / 3
 
             # Determine success
             success = (
@@ -191,11 +208,17 @@ class Phase4TestRunner:
             critical_issues = []
 
             if avg_latency > 150:
-                critical_issues.append(f"High latency: {avg_latency:.1f}ms (target: <100ms)")
+                critical_issues.append(
+                    f"High latency: {avg_latency:.1f}ms (target <100ms)"
+                )
             if memory_efficiency < 0.6:
-                critical_issues.append(f"Poor memory efficiency: {memory_efficiency*100:.1f}%")
+                critical_issues.append(
+                    f"Poor memory efficiency: {memory_efficiency*100:.1f}%"
+                )
             if throughput < 100:
-                critical_issues.append(f"Low throughput: {throughput:.1f} signals/sec")
+                critical_issues.append(
+                    f"Low throughput: {throughput:.1f} signals/sec"
+                )
 
             return {
                 'success': success,
@@ -230,10 +253,17 @@ class Phase4TestRunner:
 
             # Calculate score
             success_score = success_rate
-            latency_score = max(0, 1.0 - (avg_latency - 50) / 100) if avg_latency < 200 else 0.0
-            satisfaction_score = avg_satisfaction / 10.0  # Convert from 0-10 to 0-1
+            latency_score = (
+                max(0, 1.0 - (avg_latency - 50) / 100)
+                if avg_latency < 200
+                else 0.0
+            )
+            # Convert from 0-10 to 0-1
+            satisfaction_score = avg_satisfaction / 10.0
 
-            overall_score = (success_score + latency_score + satisfaction_score) / 3
+            overall_score = (
+                success_score + latency_score + satisfaction_score
+            ) / 3
 
             # Determine success
             success = (
@@ -247,11 +277,17 @@ class Phase4TestRunner:
             critical_issues = []
 
             if success_rate < 0.7:
-                critical_issues.append(f"Low success rate: {success_rate*100:.1f}%")
+                critical_issues.append(
+                    f"Low success rate: {success_rate*100:.1f}%"
+                )
             if avg_latency > 200:
-                critical_issues.append(f"High real-world latency: {avg_latency:.1f}ms")
+                critical_issues.append(
+                    f"High real-world latency: {avg_latency:.1f}ms"
+                )
             if avg_satisfaction < 6.0:
-                critical_issues.append(f"Poor user satisfaction: {avg_satisfaction:.1f}/10")
+                critical_issues.append(
+                    f"Poor user satisfaction: {avg_satisfaction:.1f}/10"
+                )
 
             return {
                 'success': success,
@@ -281,7 +317,8 @@ class Phase4TestRunner:
             metrics = report.get('security_metrics', {})
 
             success_rate = summary.get('success_rate', 0.0)
-            security_score = metrics.get('security_score', 0.0) / 10.0  # Convert to 0-1
+            # Convert 0-10 to 0-1
+            security_score = metrics.get('security_score', 0.0) / 10.0
             critical_vulns = summary.get('critical_vulnerabilities', 0)
 
             # Calculate overall score
@@ -299,11 +336,17 @@ class Phase4TestRunner:
             critical_issues = []
 
             if critical_vulns > 0:
-                critical_issues.append(f"Critical vulnerabilities found: {critical_vulns}")
+                critical_issues.append(
+                    f"Critical vulnerabilities found: {critical_vulns}"
+                )
             if security_score < 0.7:
-                critical_issues.append(f"Low security score: {security_score*10:.1f}/10")
+                critical_issues.append(
+                    f"Low security score: {security_score*10:.1f}/10"
+                )
             if success_rate < 0.8:
-                critical_issues.append(f"Security test failures: {(1-success_rate)*100:.1f}%")
+                critical_issues.append(
+                    f"Security test failures: {(1-success_rate)*100:.1f}%"
+                )
 
             return {
                 'success': success,
@@ -336,7 +379,12 @@ class Phase4TestRunner:
             success_rate = summary.get('success_rate', 0.0)
             avg_satisfaction = metrics.get('average_user_satisfaction', 0.0)
             avg_success_rate = metrics.get('average_task_success_rate', 0.0)
-            accessibility_score = accessibility.get('accessibility_user_performance', {}).get('avg_satisfaction', 0.0)
+            accessibility_user_perf = accessibility.get(
+                'accessibility_user_performance', {}
+            )
+            accessibility_score = accessibility_user_perf.get(
+                'avg_satisfaction', 0.0
+            )
 
             # Calculate score
             success_score = success_rate
@@ -344,14 +392,19 @@ class Phase4TestRunner:
             task_score = avg_success_rate
             accessibility_ux_score = accessibility_score / 10.0
 
-            overall_score = (success_score + satisfaction_score + task_score + accessibility_ux_score) / 4
+            overall_score = (
+                success_score
+                + satisfaction_score
+                + task_score
+                + accessibility_ux_score
+            ) / 4
 
             # Determine success
             success = (
                 success_rate >= 0.8 and         # 80%+ test completion
                 avg_satisfaction >= 7.0 and     # 7/10 user satisfaction
                 avg_success_rate >= 0.8 and     # 80%+ task success
-                accessibility_score >= 6.5      # 6.5/10 accessibility satisfaction
+                accessibility_score >= 6.5  # 6.5/10 accessibility satisfaction
             )
 
             # Extract recommendations and critical issues
@@ -359,11 +412,17 @@ class Phase4TestRunner:
             critical_issues = []
 
             if avg_satisfaction < 6.0:
-                critical_issues.append(f"Poor user satisfaction: {avg_satisfaction:.1f}/10")
+                critical_issues.append(
+                    f"Poor user satisfaction: {avg_satisfaction:.1f}/10"
+                )
             if avg_success_rate < 0.7:
-                critical_issues.append(f"Low task success rate: {avg_success_rate*100:.1f}%")
+                critical_issues.append(
+                    f"Low task success rate: {avg_success_rate*100:.1f}%"
+                )
             if accessibility_score < 5.0:
-                critical_issues.append(f"Poor accessibility experience: {accessibility_score:.1f}/10")
+                critical_issues.append(
+                    f"Poor accessibility experience: {accessibility_score:.1f}/10"
+                )
 
             return {
                 'success': success,
@@ -416,11 +475,17 @@ class Phase4TestRunner:
             critical_issues = []
 
             if critical_failures > 0:
-                critical_issues.append(f"Critical compatibility failures: {critical_failures}")
+                critical_issues.append(
+                    f"Critical compatibility failures: {critical_failures}"
+                )
             if compatibility_rate < 0.7:
-                critical_issues.append(f"Low compatibility rate: {compatibility_rate*100:.1f}%")
+                critical_issues.append(
+                    f"Low compatibility rate: {compatibility_rate*100:.1f}%"
+                )
             if avg_impact > 0.5:
-                critical_issues.append(f"High performance impact: {avg_impact*100:.1f}%")
+                critical_issues.append(
+                    f"High performance impact: {avg_impact*100:.1f}%"
+                )
 
             return {
                 'success': success,
@@ -435,7 +500,9 @@ class Phase4TestRunner:
                 'success': False,
                 'score': 0.0,
                 'details': {'error': str(e)},
-                'recommendations': ['Fix compatibility testing infrastructure'],
+                'recommendations': [
+                    'Fix compatibility testing infrastructure'
+                ],
                 'critical_issues': [f'Compatibility testing failed: {e}']
             }
 
@@ -451,15 +518,25 @@ class Phase4TestRunner:
         suites_failed = suites_run - suites_passed
 
         # Calculate overall score
-        overall_score = sum(r.score for r in self.results) / suites_run if suites_run > 0 else 0.0
+        overall_score = (
+            sum(r.score for r in self.results) / suites_run if suites_run > 0 else 0.0
+        )
 
         # Count critical blockers
         critical_blockers = sum(len(r.critical_issues) for r in self.results)
 
         # Determine readiness status
-        if suites_passed == suites_run and overall_score >= 0.8 and critical_blockers == 0:
+        if (
+            suites_passed == suites_run
+            and overall_score >= 0.8
+            and critical_blockers == 0
+        ):
             readiness_status = "READY_FOR_DEPLOYMENT"
-        elif suites_passed >= suites_run * 0.8 and overall_score >= 0.7 and critical_blockers <= 2:
+        elif (
+            suites_passed >= suites_run * 0.8
+            and overall_score >= 0.7
+            and critical_blockers <= 2
+        ):
             readiness_status = "READY_WITH_MINOR_ISSUES"
         elif suites_passed >= suites_run * 0.6 and overall_score >= 0.6:
             readiness_status = "NEEDS_IMPROVEMENT"
@@ -472,7 +549,7 @@ class Phase4TestRunner:
             all_recommendations.extend(result.recommendations)
 
         # Deduplicate and prioritize recommendations
-        unique_recommendations = list(dict.fromkeys(all_recommendations))[:10]  # Top 10
+        unique_recommendations = list(dict.fromkeys(all_recommendations))[:10]
 
         return Phase4Summary(
             total_duration_minutes=duration,
@@ -483,11 +560,11 @@ class Phase4TestRunner:
             readiness_status=readiness_status,
             critical_blockers=critical_blockers,
             recommendations=unique_recommendations,
-            results=self.results
+            results=self.results,
         )
 
-    async def _print_phase4_summary(self, summary: Phase4Summary):
-        """Print comprehensive Phase 4 summary."""
+    def _print_phase4_summary(self, summary: Phase4Summary):
+        """Print comprehensive Phase 4 summary (synchronous)."""
         print("\n" + "=" * 60)
         print("🚀 PHASE 4 COMPREHENSIVE TESTING SUMMARY")
         print("=" * 60)
@@ -500,23 +577,38 @@ class Phase4TestRunner:
             "NOT_READY": "❌"
         }.get(summary.readiness_status, "❓")
 
-        print(f"\n{status_emoji} Deployment Readiness: {summary.readiness_status.replace('_', ' ')}")
+        readiness_text = summary.readiness_status.replace('_', ' ')
+        print(
+            f"\n{status_emoji} Deployment Readiness: {readiness_text}"
+        )
         print(f"   Overall Score: {summary.overall_score*100:.1f}%")
-        print(f"   Total Duration: {summary.total_duration_minutes:.1f} minutes")
+        print(
+            f"   Total Duration: {summary.total_duration_minutes:.1f} minutes"
+        )
 
         # Test suite results
-        print(f"\nTest Suite Results:")
+        print("\nTest Suite Results:")
         print(f"   Total Suites: {summary.suites_run}")
         print(f"   Passed: {summary.suites_passed}")
         print(f"   Failed: {summary.suites_failed}")
-        print(f"   Success Rate: {(summary.suites_passed/summary.suites_run)*100:.1f}%")
+        success_pct = (
+            (summary.suites_passed / summary.suites_run) * 100
+            if summary.suites_run
+            else 0.0
+        )
+        print(f"   Success Rate: {success_pct:.1f}%")
 
-        # Individual suite performance
-        print(f"\nSuite Performance:")
+    # Individual suite performance
+    print("\nSuite Performance:")
         for result in summary.results:
             status = "✅" if result.success else "❌"
-            duration = (result.end_time - result.start_time).total_seconds() / 60
-            print(f"   {status} {result.suite_name}: {result.score*100:.1f}% ({duration:.1f}min)")
+            duration = (
+                result.end_time - result.start_time
+            ).total_seconds() / 60
+            score_pct = result.score * 100
+            print(
+                f"   {status} {result.suite_name}: {score_pct:.1f}% ({duration:.1f}min)"
+            )
 
         # Critical issues
         if summary.critical_blockers > 0:
@@ -548,8 +640,8 @@ class Phase4TestRunner:
             print("   System is not ready for deployment.")
             print("   Significant issues must be resolved first.")
 
-    async def _save_phase4_results(self, summary: Phase4Summary):
-        """Save comprehensive Phase 4 results."""
+    def _save_phase4_results(self, summary: Phase4Summary):
+        """Save comprehensive Phase 4 results (synchronous)."""
         # Convert summary to dictionary
         summary_dict = {
             'phase4_summary': {

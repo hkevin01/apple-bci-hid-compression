@@ -73,5 +73,24 @@
             ],
             "problemMatcher": []
         }
+        ,
+        {
+            "label": "python: Phase 4 Comprehensive Testing",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "-m",
+                "tests.phase4_runner"
+            ],
+            "group": {
+                "kind": "test",
+                "isDefault": false
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            }
+        }
     ]
 }
