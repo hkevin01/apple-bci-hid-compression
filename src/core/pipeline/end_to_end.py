@@ -1,16 +1,17 @@
 """Synchronous end-to-end neural -> compression -> intent -> HID pipeline."""
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 
-from ...hid_interface import HIDEvent, select_backend
-from ...neural_translation.intent_translator import IntentTranslator
-from ..compression import WaveletCompressor
+from src.core.compression import WaveletCompressor
+from src.hid_interface import HIDEvent, select_backend
+from src.neural_translation.intent_translator import IntentTranslator
 
 
-def process_neural_input(samples: np.ndarray, compressor: Optional[WaveletCompressor] = None) -> Optional[HIDEvent]:
+def process_neural_input(
+    samples: np.ndarray,
+    compressor: WaveletCompressor | None = None,
+) -> HIDEvent | None:
     """Process one frame of neural samples and emit a HID event if any.
 
     Steps:
@@ -26,11 +27,12 @@ def process_neural_input(samples: np.ndarray, compressor: Optional[WaveletCompre
     translator = IntentTranslator()
     # Translator is async; run a minimal loop
     import asyncio
-    async def _translate():
+
+    async def _translate() -> object:
         return await translator.translate(samples)
+
     res = asyncio.run(_translate())
     backend = select_backend()
-    if res.hid_event:
-        backend.send(res.hid_event)
-    return res.hid_event
-    return res.hid_event
+    if getattr(res, "hid_event", None):
+        backend.send(res.hid_event)  # type: ignore[attr-defined]
+    return getattr(res, "hid_event", None)

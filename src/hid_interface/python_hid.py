@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from time import time
-from typing import TYPE_CHECKING, Any, Dict, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:  # pragma: no cover
     from src.interfaces.hid_protocol import HIDEvent as _SysHIDEvent
@@ -32,7 +32,7 @@ else:  # runtime optional import
 class HIDEvent:
     event_type: str
     timestamp: float
-    data: Dict[str, Any]
+    data: dict[str, Any]
 
 
 class HIDBackend(Protocol):
@@ -70,14 +70,6 @@ def create_mouse_move(dx: float, dy: float) -> HIDEvent:
         event_type="mouse_move",
         timestamp=time(),
         data={"x": dx, "y": dy},
-    )
-
-
-def create_click(button: str = "left", pressed: bool = True) -> HIDEvent:
-    return HIDEvent(
-        event_type="mouse_click",
-        timestamp=time(),
-        data={"button": button, "pressed": pressed},
     )
 
 

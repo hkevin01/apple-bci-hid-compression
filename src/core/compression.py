@@ -6,9 +6,11 @@ to a simple hierarchical average/split transform when pywt is absent.
 
 from __future__ import annotations
 
-from typing import List, Tuple, cast
+from typing import cast
 
 import numpy as np
+
+from src.core.wire_format import decode_header, encode_header, validate_crc
 
 try:  # Optional dependency
     import pywt  # type: ignore
@@ -46,12 +48,12 @@ class WaveletCompressor(CompressionAlgorithm):
         self.level = level
         self.top_k_ratio = top_k_ratio
 
-    def _dwt_channel(self, channel: np.ndarray) -> List[np.ndarray]:
+    def _dwt_channel(self, channel: np.ndarray) -> list[np.ndarray]:
         if pywt:
             coeffs = pywt.wavedec(channel, self.wavelet, level=self.level)
-            return cast(List[np.ndarray], coeffs)
+            return cast(list[np.ndarray], coeffs)
         # Fallback: simple hierarchical averaging (very rough)
-        dwt_coeffs: List[np.ndarray] = []
+        dwt_coeffs: list[np.ndarray] = []
         current = channel.copy()
         for _ in range(self.level):
             if len(current) < 2:
@@ -66,7 +68,7 @@ class WaveletCompressor(CompressionAlgorithm):
         return dwt_coeffs[::-1]
 
     def _idwt_channel(
-        self, coeffs: List[np.ndarray], original_len: int
+        self, coeffs: list[np.ndarray], original_len: int
     ) -> np.ndarray:
         if pywt:
             rec = pywt.waverec(coeffs, self.wavelet)
@@ -90,9 +92,9 @@ class WaveletCompressor(CompressionAlgorithm):
         if data.ndim != 2:
             raise ValueError("Expected 2D array (frames x channels)")
         frames, channels = data.shape
-        coeffs_all: List[List[np.ndarray]] = []
-        sparse_coeffs: List[np.ndarray] = []
-        meta: List[Tuple[int, int]] = []  # (index into flat array, length)
+        coeffs_all: list[list[np.ndarray]] = []
+        sparse_coeffs: list[np.ndarray] = []
+        meta: list[tuple[int, int]] = []  # (index into flat array, length)
         # Decompose each channel
         for c in range(channels):
             coeffs = self._dwt_channel(data[:, c])
@@ -132,23 +134,30 @@ class WaveletCompressor(CompressionAlgorithm):
             if sparse_coeffs
             else np.array([], dtype=np.float32)
         )
-        header = np.array([
-            frames, channels, self.level,
-            int(self.top_k_ratio * 1e4)  # store ratio scaled
-        ], dtype=np.int32).tobytes()
-        return header + flat.tobytes()
+        payload = flat.tobytes()
+        header = encode_header(
+            frames=int(frames),
+            channels=int(channels),
+            level=int(self.level),
+            top_k_scaled=int(self.top_k_ratio * 1e4),
+            wavelet_name=str(self.wavelet),
+            payload=payload,
+        )
+        return header + payload
 
     def decompress(self, data: bytes) -> np.ndarray:
-        if len(data) < 16:
+        if not data:
             return np.array([])
-        header = np.frombuffer(data[:16], dtype=np.int32)
-        frames, channels, _level, _topk = header
-        # Payload floats
-        payload = np.frombuffer(data[16:], dtype=np.float32)
+        hdr, header_size = decode_header(data)
+        payload_bytes = data[header_size:header_size + hdr.payload_len]
+        if len(payload_bytes) != hdr.payload_len:
+            raise ValueError("payload truncated")
+        validate_crc(payload_bytes, hdr.crc32)
+        payload = np.frombuffer(payload_bytes, dtype=np.float32)
         # Reconstruct channel by channel
-        out = np.zeros((frames, channels), dtype=np.float32)
+        out = np.zeros((hdr.frames, hdr.channels), dtype=np.float32)
         cursor = 0
-        for c in range(channels):
+        for c in range(hdr.channels):
             if cursor >= len(payload):
                 break
             approx_len = int(payload[cursor].view(np.int32))
@@ -159,19 +168,20 @@ class WaveletCompressor(CompressionAlgorithm):
             cursor += 1
             details_sparse = payload[cursor:cursor + details_len]
             cursor += details_len
-            if self.level > 0 and details_len > 0:
-                per_level = max(1, details_len // self.level)
-                coeff_list: List[np.ndarray] = [approx]
-                for li in range(self.level):
+            levels = max(0, int(hdr.level))
+            if levels > 0 and details_len > 0:
+                per_level = max(1, details_len // levels)
+                coeff_list: list[np.ndarray] = [approx]
+                for li in range(levels):
                     start = li * per_level
                     end = (
                         (li + 1) * per_level
-                        if li < self.level - 1
+                        if li < levels - 1
                         else details_len
                     )
                     coeff_list.append(details_sparse[start:end])
             else:
                 coeff_list = [approx]
-            rec = self._idwt_channel(coeff_list, frames)
-            out[:, c] = rec[:frames]
+            rec = self._idwt_channel(coeff_list, int(hdr.frames))
+            out[:, c] = rec[: int(hdr.frames)]
         return out

@@ -1,12 +1,15 @@
 """Data pipeline implementation for direct BCI data streaming."""
+from __future__ import annotations
 
 import asyncio
+from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass
-from typing import AsyncIterator, Callable, List, Optional
 
-import numpy as np
+from src.core.processing import NeuralData
 
-from ..processing import NeuralData
+# local type aliases to keep signatures short and within line length
+Processor = Callable[[NeuralData], NeuralData]
+Consumer = Callable[[NeuralData], None]
 
 
 @dataclass
@@ -16,23 +19,27 @@ class DataStreamConfig:
     chunk_size: int = 512  # Number of samples per chunk
     sample_rate: float = 1000.0  # Hz
     buffer_size: int = 8192  # Samples to buffer
-    channels: List[str] = None  # Channel names
+    channels: list[str] | None = None  # Channel names
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.channels is None:
             self.channels = []
 
 
 class DataPipeline:
     """Direct device-to-host data pipeline implementation."""
+    config: DataStreamConfig
+    _processors: list[Processor]
+    _running: bool
+    _buffer: asyncio.Queue
 
     def __init__(self, config: DataStreamConfig):
         self.config = config
-        self._processors: List[Callable[[NeuralData], NeuralData]] = []
+        self._processors = []
         self._running = False
         self._buffer = asyncio.Queue(maxsize=self.config.buffer_size)
 
-    def add_processor(self, processor: Callable[[NeuralData], NeuralData]) -> None:
+    def add_processor(self, processor: Processor) -> None:
         """Add a data processor to the pipeline."""
         self._processors.append(processor)
 
@@ -71,21 +78,23 @@ class DataPipeline:
                 processed_data = await self.process_chunk(data)
                 yield processed_data
             else:
-                await asyncio.sleep(0.001)  # Small delay to prevent busy waiting
+                await asyncio.sleep(0.001)  # avoid busy wait
 
 
 class RealTimeDataProcessor:
     """Real-time data processing implementation."""
+    pipeline: DataPipeline
+    _consumer_task: asyncio.Task | None
 
     def __init__(self, pipeline: DataPipeline):
         self.pipeline = pipeline
-        self._consumer_task: Optional[asyncio.Task] = None
+        self._consumer_task = None
 
-    async def start_processing(self, callback: Callable[[NeuralData], None]) -> None:
+    async def start_processing(self, callback: Consumer) -> None:
         """Start processing data in real-time."""
         await self.pipeline.start()
 
-        async def consumer():
+        async def consumer() -> None:
             async for data in self.pipeline.get_data():
                 callback(data)
 

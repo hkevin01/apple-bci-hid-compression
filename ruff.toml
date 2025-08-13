@@ -1,0 +1,12 @@
+line-length = 100
+target-version = "py311"
+
+[lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = [
+    "D",   # pydocstyle off for now
+    "ANN", # type annotation checks off for tests
+]
+
+[lint.per-file-ignores]
+"tests/**/*" = ["ANN001", "ANN201", "ANN202", "D"]
