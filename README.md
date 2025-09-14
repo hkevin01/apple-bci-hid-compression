@@ -33,31 +33,31 @@ This bridge solves these challenges by providing:
 ```mermaid
 graph TB
     subgraph "Neural Signal Acquisition"
-        BCI[🧠 BCI Device<br/>EEG/fNIRS/EMG]
-        ADC[⚡ ADC Sampling<br/>1000Hz × 64ch]
+        BCI["🧠 BCI Device<br/>EEG/fNIRS/EMG"]
+        ADC["⚡ ADC Sampling<br/>1000Hz × 64ch"]
     end
 
     subgraph "Core Processing Pipeline"
         subgraph "Compression Layer"
-            WC[📦 WaveletCompressor<br/>PyWavelets + Fallback]
-            WF[📋 Wire Format<br/>CRC32 + Metadata]
+            WC["📦 WaveletCompressor<br/>PyWavelets + Fallback"]
+            WF["📋 Wire Format<br/>CRC32 + Metadata"]
         end
 
         subgraph "Neural Translation"
-            GR[🤖 Gesture Recognition<br/>Hybrid ML + Rules]
-            IM[🎯 Input Mapping<br/>Context-Aware]
+            GR["🤖 Gesture Recognition<br/>Hybrid ML + Rules"]
+            IM["🎯 Input Mapping<br/>Context-Aware"]
         end
 
         subgraph "HID Interface"
-            HB[🖱️ HID Backend<br/>Mock/Mac/IOKit]
-            AP[🍎 Apple Protocols<br/>CGEvent/NSEvent]
+            HB["🖱️ HID Backend<br/>Mock/Mac/IOKit"]
+            AP["🍎 Apple Protocols<br/>CGEvent/NSEvent"]
         end
     end
 
     subgraph "Hardware Acceleration"
-        Metal[⚡ Metal Shaders<br/>GPU Compute]
-        CoreML[🧠 Neural Engine<br/>ML Inference]
-        SIMD[⚡ Vector Ops<br/>CPU SIMD]
+        Metal["⚡ Metal Shaders<br/>GPU Compute"]
+        CoreML["🧠 Neural Engine<br/>ML Inference"]
+        SIMD["⚡ Vector Ops<br/>CPU SIMD"]
     end
 
     BCI --> ADC
@@ -140,10 +140,10 @@ graph TB
 ```mermaid
 graph LR
     subgraph "Modular Design"
-        Core[🧠 Core Processing<br/>compression.py<br/>wire_format.py]
-        Neural[🎯 Neural Translation<br/>intent_translator.py<br/>gesture_recognition.py]
-        HID[🖱️ HID Interface<br/>python_hid.py<br/>hid_protocol.py]
-        Pipeline[⚡ Pipeline<br/>end_to_end.py<br/>async_end_to_end.py]
+        Core["🧠 Core Processing<br/>compression.py<br/>wire_format.py"]
+        Neural["🎯 Neural Translation<br/>intent_translator.py<br/>gesture_recognition.py"]
+        HID["🖱️ HID Interface<br/>python_hid.py<br/>hid_protocol.py"]
+        Pipeline["⚡ Pipeline<br/>end_to_end.py<br/>async_end_to_end.py"]
     end
 
     Core --> Neural
@@ -168,18 +168,18 @@ graph LR
 ```mermaid
 graph TD
     subgraph "Compression Pipeline"
-        Input[📊 Neural Signal<br/>float32[channels, samples]]
+        Input["📊 Neural Signal<br/>float32 channels samples"]
 
         subgraph "Per-Channel Processing"
-            DWT[🌊 Discrete Wavelet Transform<br/>Daubechies-4, 3 levels]
-            Sparse[✂️ Sparsification<br/>Top-K coefficients by magnitude]
-            Quant[📏 Quantization<br/>8-bit uniform quantization]
+            DWT["🌊 Discrete Wavelet Transform<br/>Daubechies-4, 3 levels"]
+            Sparse["✂️ Sparsification<br/>Top-K coefficients by magnitude"]
+            Quant["📏 Quantization<br/>8-bit uniform quantization"]
         end
 
         subgraph "Serialization"
-            Header[📋 Wire Format Header<br/>Magic + Version + Metadata]
-            CRC[🔒 CRC32 Validation<br/>Data integrity check]
-            Output[📦 Compressed Bytes]
+            Header["📋 Wire Format Header<br/>Magic + Version + Metadata"]
+            CRC["🔒 CRC32 Validation<br/>Data integrity check"]
+            Output["📦 Compressed Bytes"]
         end
     end
 
@@ -214,24 +214,24 @@ graph TD
 graph TB
     subgraph "Hybrid Recognition System"
         subgraph "ML Pipeline"
-            Features[📊 Feature Extraction<br/>Spectral power, Time-domain]
-            MLModel[🤖 Neural Network<br/>CNN + LSTM hybrid]
-            MLConf[📈 ML Confidence<br/>Softmax probabilities]
+            Features["📊 Feature Extraction<br/>Spectral power, Time-domain"]
+            MLModel["🤖 Neural Network<br/>CNN + LSTM hybrid"]
+            MLConf["📈 ML Confidence<br/>Softmax probabilities"]
         end
 
         subgraph "Rule-Based System"
-            Thresh[📏 Threshold Detection<br/>Amplitude/frequency bands]
-            Pattern[🔍 Pattern Matching<br/>Template correlation]
-            RuleConf[📊 Rule Confidence<br/>Match scores]
+            Thresh["📏 Threshold Detection<br/>Amplitude/frequency bands"]
+            Pattern["🔍 Pattern Matching<br/>Template correlation"]
+            RuleConf["📊 Rule Confidence<br/>Match scores"]
         end
 
         subgraph "Fusion Layer"
-            Weighted[⚖️ Weighted Fusion<br/>Confidence-based voting]
-            Decision[✅ Final Decision<br/>Multi-class output]
+            Weighted["⚖️ Weighted Fusion<br/>Confidence-based voting"]
+            Decision["✅ Final Decision<br/>Multi-class output"]
         end
     end
 
-    Neural[🧠 Neural Signal] --> Features
+    Neural["🧠 Neural Signal"] --> Features
     Neural --> Thresh
 
     Features --> MLModel
@@ -266,20 +266,20 @@ graph TB
 graph TB
     subgraph "HID Backend Architecture"
         subgraph "Abstraction Layer"
-            HIDEvent[📝 HIDEvent<br/>Standardized event format]
-            Protocol[🔌 HIDBackend Protocol<br/>send() interface]
+            HIDEvent["📝 HIDEvent<br/>Standardized event format"]
+            Protocol["🔌 HIDBackend Protocol<br/>send interface"]
         end
 
         subgraph "Platform Implementations"
-            Mock[🎭 MockHIDBackend<br/>Testing & development]
-            Mac[🍎 MacHIDBackend<br/>IOKit integration]
-            Future[🔮 Future Backends<br/>Linux/Windows]
+            Mock["🎭 MockHIDBackend<br/>Testing & development"]
+            Mac["🍎 MacHIDBackend<br/>IOKit integration"]
+            Future["🔮 Future Backends<br/>Linux/Windows"]
         end
 
         subgraph "Apple Integration"
-            IOKit[⚙️ IOKit Framework<br/>Low-level HID access]
-            CGEvent[🖥️ CGEvent System<br/>High-level input synthesis]
-            Access[♿ Accessibility APIs<br/>VoiceOver integration]
+            IOKit["⚙️ IOKit Framework<br/>Low-level HID access"]
+            CGEvent["🖥️ CGEvent System<br/>High-level input synthesis"]
+            Access["♿ Accessibility APIs<br/>VoiceOver integration"]
         end
     end
 
@@ -323,21 +323,21 @@ graph TB
 graph TB
     subgraph "Privacy-by-Design Architecture"
         subgraph "Data Protection"
-            OnDevice[🏠 On-Device Processing<br/>No cloud transmission]
-            Encrypt[🔐 AES-256 Encryption<br/>Data at rest/transit]
-            Memory[🧠 Secure Memory<br/>Clear after processing]
+            OnDevice["🏠 On-Device Processing<br/>No cloud transmission"]
+            Encrypt["🔐 AES-256 Encryption<br/>Data at rest/transit"]
+            Memory["🧠 Secure Memory<br/>Clear after processing"]
         end
 
         subgraph "Access Control"
-            Permissions[🔑 System Permissions<br/>Accessibility/Input Monitoring]
-            Sandbox[📦 App Sandboxing<br/>Minimal privilege access]
-            Audit[📋 Audit Logging<br/>Access tracking]
+            Permissions["🔑 System Permissions<br/>Accessibility/Input Monitoring"]
+            Sandbox["📦 App Sandboxing<br/>Minimal privilege access"]
+            Audit["📋 Audit Logging<br/>Access tracking"]
         end
 
         subgraph "Compliance"
-            GDPR[🇪🇺 GDPR Compliance<br/>Right to erasure]
-            HIPAA[🏥 HIPAA Considerations<br/>Healthcare data protection]
-            Apple[🍎 Apple Privacy Guidelines<br/>Platform compliance]
+            GDPR["🇪🇺 GDPR Compliance<br/>Right to erasure"]
+            HIPAA["🏥 HIPAA Considerations<br/>Healthcare data protection"]
+            Apple["🍎 Apple Privacy Guidelines<br/>Platform compliance"]
         end
     end
 
@@ -433,18 +433,18 @@ pip install numpy scipy pytest
 graph LR
     subgraph "Compression Benchmarks"
         subgraph "Input Characteristics"
-            Channels[📊 64 Channels<br/>1000 Hz sampling]
-            Size[📏 256KB/sec<br/>Raw data rate]
+            Channels["📊 64 Channels<br/>1000 Hz sampling"]
+            Size["📏 256KB/sec<br/>Raw data rate"]
         end
 
         subgraph "Compression Results"
-            Wavelet[🌊 Wavelet (Level 3)<br/>90% compression<br/>25KB/sec output]
-            Fallback[🔄 Fallback Method<br/>80% compression<br/>50KB/sec output]
+            Wavelet["🌊 Wavelet Level 3<br/>90 percent compression<br/>25KB/sec output"]
+            Fallback["🔄 Fallback Method<br/>80 percent compression<br/>50KB/sec output"]
         end
 
         subgraph "Quality Metrics"
-            SNR[📈 SNR: 15-25 dB<br/>Gesture features preserved]
-            Corr[📊 Correlation: >0.85<br/>High signal fidelity]
+            SNR["📈 SNR: 15-25 dB<br/>Gesture features preserved"]
+            Corr["📊 Correlation: 0.85+<br/>High signal fidelity"]
         end
     end
 
@@ -747,24 +747,24 @@ sequenceDiagram
 ```mermaid
 graph TB
     subgraph "Application Layer"
-        API[🔌 Public API<br/>end_to_end.py]
-        Config[⚙️ Configuration<br/>Environment variables]
+        API["🔌 Public API<br/>end_to_end.py"]
+        Config["⚙️ Configuration<br/>Environment variables"]
     end
 
     subgraph "Business Logic Layer"
-        Compression[📦 Compression<br/>WaveletCompressor]
-        Recognition[🤖 Recognition<br/>HybridGestureRecognizer]
-        Mapping[🎯 Mapping<br/>FixedInputMapper]
+        Compression["📦 Compression<br/>WaveletCompressor"]
+        Recognition["🤖 Recognition<br/>HybridGestureRecognizer"]
+        Mapping["🎯 Mapping<br/>FixedInputMapper"]
     end
 
     subgraph "Hardware Abstraction Layer"
-        HIDInterface[🖱️ HID Interface<br/>Protocol-based backends]
-        Acceleration[⚡ Hardware Acceleration<br/>Metal/CoreML/SIMD]
+        HIDInterface["🖱️ HID Interface<br/>Protocol-based backends"]
+        Acceleration["⚡ Hardware Acceleration<br/>Metal/CoreML/SIMD"]
     end
 
     subgraph "System Integration Layer"
-        AppleAPIs[🍎 Apple APIs<br/>IOKit/CGEvent/Accessibility]
-        CrossPlatform[🌐 Cross-Platform<br/>Mock backends for testing]
+        AppleAPIs["🍎 Apple APIs<br/>IOKit/CGEvent/Accessibility"]
+        CrossPlatform["🌐 Cross-Platform<br/>Mock backends for testing"]
     end
 
     API --> Compression
@@ -833,20 +833,20 @@ python -c "from src.core.compression import WaveletCompressor; print('✅ Instal
 graph TD
     subgraph "Testing Pyramid"
         subgraph "Unit Tests (Fast, Isolated)"
-            Unit1[🔬 Component Tests<br/>compression.py]
-            Unit2[🔬 Translation Tests<br/>intent_translator.py]
-            Unit3[🔬 HID Tests<br/>python_hid.py]
+            Unit1["🔬 Component Tests<br/>compression.py"]
+            Unit2["🔬 Translation Tests<br/>intent_translator.py"]
+            Unit3["🔬 HID Tests<br/>python_hid.py"]
         end
 
         subgraph "Integration Tests (Realistic)"
-            Int1[🔗 Pipeline Tests<br/>end-to-end workflows]
-            Int2[🔗 Device Simulation<br/>Multi-component interaction]
+            Int1["🔗 Pipeline Tests<br/>end-to-end workflows"]
+            Int2["🔗 Device Simulation<br/>Multi-component interaction"]
         end
 
         subgraph "System Tests (Comprehensive)"
-            Sys1[⚡ Performance Benchmarks<br/>Latency & throughput]
-            Sys2[🔒 Security Validation<br/>Encryption & access control]
-            Sys3[🌐 Compatibility Matrix<br/>Cross-platform testing]
+            Sys1["⚡ Performance Benchmarks<br/>Latency & throughput"]
+            Sys2["🔒 Security Validation<br/>Encryption & access control"]
+            Sys3["🌐 Compatibility Matrix<br/>Cross-platform testing"]
         end
     end
 
@@ -1087,19 +1087,19 @@ MIT License - Key Permissions:
 graph TB
     subgraph "Data Protection Layers"
         subgraph "Collection"
-            Minimal[🎯 Minimal Collection<br/>Only gesture-relevant features]
-            OnDevice[🏠 On-Device Processing<br/>No cloud transmission]
+            Minimal["🎯 Minimal Collection<br/>Only gesture-relevant features"]
+            OnDevice["🏠 On-Device Processing<br/>No cloud transmission"]
         end
 
         subgraph "Processing"
-            Encrypt[🔐 Memory Encryption<br/>AES-256 in RAM]
-            Ephemeral[⏱️ Ephemeral Storage<br/>Auto-clear after use]
+            Encrypt["🔐 Memory Encryption<br/>AES-256 in RAM"]
+            Ephemeral["⏱️ Ephemeral Storage<br/>Auto-clear after use"]
         end
 
         subgraph "Compliance"
-            GDPR[🇪🇺 GDPR Compliance<br/>Right to erasure]
-            HIPAA[🏥 HIPAA Considerations<br/>Healthcare data protection]
-            Apple[🍎 Apple Privacy Policy<br/>Platform compliance]
+            GDPR["🇪🇺 GDPR Compliance<br/>Right to erasure"]
+            HIPAA["🏥 HIPAA Considerations<br/>Healthcare data protection"]
+            Apple["🍎 Apple Privacy Policy<br/>Platform compliance"]
         end
     end
 
