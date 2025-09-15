@@ -1,0 +1,188 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bci-hid-compression
+  labels:
+    name: bci-hid-compression
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bci-compression-config
+  namespace: bci-hid-compression
+data:
+  LOG_LEVEL: "INFO"
+  MAX_CONNECTIONS: "1000"
+  COMPRESSION_QUALITY: "high"
+  ENABLE_METRICS: "true"
+  METRICS_PORT: "9090"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bci-compression-secrets
+  namespace: bci-hid-compression
+type: Opaque
+data:
+  # These will be populated from AWS Secrets Manager
+  DATABASE_URL: ""
+  API_KEY: ""
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bci-compression-api
+  namespace: bci-hid-compression
+  labels:
+    app: bci-compression-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: bci-compression-api
+  template:
+    metadata:
+      labels:
+        app: bci-compression-api
+    spec:
+      containers:
+      - name: api
+        image: IMAGE_PLACEHOLDER
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: PORT
+          value: "8080"
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: bci-compression-config
+              key: LOG_LEVEL
+        - name: MAX_CONNECTIONS
+          valueFrom:
+            configMapKeyRef:
+              name: bci-compression-config
+              key: MAX_CONNECTIONS
+        - name: COMPRESSION_QUALITY
+          valueFrom:
+            configMapKeyRef:
+              name: bci-compression-config
+              key: COMPRESSION_QUALITY
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: bci-compression-secrets
+              key: DATABASE_URL
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: bci-compression-secrets
+              key: API_KEY
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+      securityContext:
+        fsGroup: 1000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bci-compression-service
+  namespace: bci-hid-compression
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 443
+    targetPort: 8080
+    protocol: TCP
+    name: https
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: bci-compression-api
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bci-compression-ingress
+  namespace: bci-hid-compression
+  annotations:
+    kubernetes.io/ingress.class: "alb"
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/CERTIFICATE_ID
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+spec:
+  rules:
+  - host: api.bci-hid-compression.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: bci-compression-service
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - api.bci-hid-compression.com
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: bci-compression-hpa
+  namespace: bci-hid-compression
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: bci-compression-api
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
